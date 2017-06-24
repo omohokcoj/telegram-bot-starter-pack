@@ -22,7 +22,7 @@ defmodule TelegramBot.Models.Message do
     |> cast(params, [:text])
     |> put_change(:external_id, params["message_id"])
     |> put_change(:date, DateTime.from_unix!(params["date"]))
-    |> validate_required([:external_id, :text, :date])
+    |> validate_required([:external_id, :date])
     |> assign_assoc(:user, using: :external_id, params: "from")
     |> assign_assoc(:chat, using: :external_id)
   end

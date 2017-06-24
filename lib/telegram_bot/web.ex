@@ -6,9 +6,7 @@ defmodule TelegramBot.Web do
 
   require Logger
 
-  if Mix.env == :dev do
-    plug Plug.Logger, log: :debug
-  end
+  plug Plug.Logger
 
   plug Plug.Parsers, parsers: [:json], json_decoder: Poison
 
@@ -16,13 +14,15 @@ defmodule TelegramBot.Web do
   plug :dispatch
 
   post TelegramBot.webhook_path do
+    Logger.info("Params: #{inspect(conn.params)}")
+
     case conn.params do
       %{"message" => message_params} ->
         message   = Repo.get_by(Models.Message, external_id: message_params["message_id"])
 
         unless message do
           changeset = Models.Message.changeset(%Models.Message{}, message_params)
-          message = message || Repo.insert!(changeset)
+          message = Repo.insert!(changeset)
         end
 
         TelegramBot.HelloWorldResponder.process_message(message)

@@ -1,5 +1,5 @@
 defmodule TelegramBot.Responder do
-  @max_restarts 10
+  @max_restarts 5
   @max_seconds 10
 
   defmacro __using__(_) do
@@ -19,7 +19,7 @@ defmodule TelegramBot.Responder do
           matching =
             case pattern do
               p when is_bitstring(p) -> message.text == p
-              %Regex{}               -> Regex.named_captures(pattern, message.text)
+              %Regex{}               -> Regex.named_captures(pattern, message.text || "")
               _                      -> false
             end
 

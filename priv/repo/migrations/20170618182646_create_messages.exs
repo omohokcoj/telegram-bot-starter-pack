@@ -6,7 +6,7 @@ defmodule TelegramBot.Repo.Migrations.CreateMessages do
       add :external_id, :integer,      null: false
       add :chat_id,     :integer,      null: false
       add :user_id,     :integer
-      add :text,        :text,         null: false
+      add :text,        :text
       add :date,        :utc_datetime, null: false
 
       timestamps()
