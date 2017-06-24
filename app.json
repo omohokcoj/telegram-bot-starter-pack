@@ -1,0 +1,30 @@
+{
+  "name": "Telegram Bot Starter Pack",
+  "description": "Minimal Telegram bot on webhooks using Elixir/Plug.",
+  "repository": "https://github.com/omohokcoj/telegram_bot_starter_pack",
+  "logo": "https://telegram.org/img/t_logo.png",
+  "keywords": ["elixir", "erlang", "telegram-bot", "plug"],
+  "addons": ["heroku-postgresql"],
+  "buildpacks": [
+    {
+      "url": "https://github.com/HashNuke/heroku-buildpack-elixir.git"
+    }
+  ],
+  "scripts": {
+    "postdeploy": "mix ecto.migrate && mix set_webhook"
+  },
+  "env": {
+    "TELEGRAM_TOKEN" : {
+      "description": "Telegram bot HTTP API token"
+    },
+    "HOST": {
+      "description": "Host name of your app"
+    },
+    "WEBHOOK_PATH": {
+      "description": "A secret path to telegram webhook",
+      "generator": "secret"
+    },
+    "MIX_ENV": "prod",
+    "PORT": "443"
+  }
+}
