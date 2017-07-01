@@ -2,7 +2,7 @@ defmodule TelegramBot.Web do
   use Plug.Router
   use Plug.ErrorHandler
 
-  alias TelegramBot.{Repo, Models}
+  alias TelegramBot.{Repo, Models, Utils, HelloWorldResponder}
 
   require Logger
 
@@ -16,21 +16,20 @@ defmodule TelegramBot.Web do
   post TelegramBot.webhook_path do
     Logger.info("Params: #{inspect(conn.params)}")
 
-    case conn.params do
-      %{"message" => message_params} ->
-        message   = Repo.get_by(Models.Message, external_id: message_params["message_id"])
-
-        unless message do
-          changeset = Models.Message.changeset(%Models.Message{}, message_params)
-          message = Repo.insert!(changeset)
-        end
-
-        TelegramBot.HelloWorldResponder.process_message(message)
-
-        send_resp(conn, 200, "")
-      _ ->
-        send_resp(conn, 400, "WHAT?")
+    if conn.params["message"] do
+      %Models.Message{}
+      |> Models.Message.changeset(conn.params["message"])
+      |> Repo.insert_or_update!
     end
+
+    conn.params
+    |> Utils.ensure_atoms_map
+    |> List.wrap
+    |> Nadia.Parser.parse_result("getUpdates")
+    |> List.first
+    |> HelloWorldResponder.process_update!
+
+    send_resp(conn, 200, "")
   end
 
   match _ do

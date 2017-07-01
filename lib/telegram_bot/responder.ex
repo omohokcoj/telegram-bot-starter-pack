@@ -1,10 +1,10 @@
 defmodule TelegramBot.Responder do
-  @max_restarts 5
-  @max_seconds 10
+  alias TelegramBot.Utils
 
   defmacro __using__(_) do
     quote do
       import unquote(__MODULE__)
+      import Nadia
 
       @before_compile unquote(__MODULE__)
 
@@ -14,23 +14,21 @@ defmodule TelegramBot.Responder do
 
   defmacro __before_compile__(_) do
     quote do
-      def process_message(message) do
-        Enum.each __MODULE__.defined_patterns, fn pattern ->
+      def process_update!(update) do
+        Enum.take_while __MODULE__.defined_patterns, fn {type, pattern} ->
           matching =
-            case pattern do
-              p when is_bitstring(p) -> message.text == p
-              %Regex{}               -> Regex.named_captures(pattern, message.text || "")
-              _                      -> false
+            cond do
+              is_bitstring(pattern) -> update.message.text == pattern
+              is_list(pattern)      -> Enum.member?(pattern, update.message.text)
+              %Regex{} = pattern    -> Regex.named_captures(pattern, update.message.text || "")
+              true                  -> nil
             end
 
           if matching do
-            if is_map(matching) do
-              matching = Enum.into(matching, %{}, fn {k, v} -> {String.to_atom(k), v} end)
-              message  = Map.put(message, :captures, matching)
-            end
-
-            Task.Supervisor.start_child(unquote(__MODULE__), __MODULE__, :on, [pattern, message])
+            apply(__MODULE__, :on, [:message, pattern, update.message, Utils.ensure_atoms_map(matching)])
           end
+
+          !matching
         end
       end
 
@@ -38,19 +36,16 @@ defmodule TelegramBot.Responder do
     end
   end
 
-  defmacro on(pattern, do: body) do
+  defmacro on_message(pattern, do: block) do
     quote do
-      @patterns @patterns ++ [unquote(pattern)]
-      def on(unquote(pattern), var!(message)), do: unquote(body)
+      @patterns @patterns ++ [{:message, unquote(pattern)}]
+      def on(:message, unquote(pattern), var!(message), var!(captures)), do: unquote(block)
     end
   end
 
-  def send_resp(message, text, options \\ []) do
-    Nadia.send_message(message.chat.external_id, text, options)
-  end
-
-  def start_link do
-    Task.Supervisor.start_link(restart: :transient, max_restarts: @max_restarts,
-                               max_seconds: @max_seconds, name: __MODULE__)
+  defmacro send_message(text, options \\ []) do
+    quote do
+      Nadia.send_message(var!(message).chat.id, unquote(text), unquote(options))
+    end
   end
 end

@@ -9,7 +9,6 @@ defmodule TelegramBot do
     children = [
       supervisor(TelegramBot.Web, []),
       supervisor(TelegramBot.Repo, []),
-      supervisor(TelegramBot.Responder, [])
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one)
